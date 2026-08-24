@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PhotoExplorer.Cli/PhotoExplorer.Cli.csproj" />
+    <Project Path="src/PhotoExplorer.Core/PhotoExplorer.Core.csproj" />
+    <Project Path="src/PhotoExplorer.Wpf/PhotoExplorer.Wpf.csproj" />
+  </Folder>
+</Solution>
