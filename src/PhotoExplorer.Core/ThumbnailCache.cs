@@ -6,6 +6,14 @@ namespace PhotoExplorer.Core;
 public class ThumbnailCache
 {
     private readonly string _connectionString;
+    private int _hits;
+    private int _misses;
+
+    /// <summary>Сколько раз миниатюра нашлась в кеше за сессию.</summary>
+    public int Hits => _hits;
+
+    /// <summary>Сколько раз миниатюру пришлось строить за сессию.</summary>
+    public int Misses => _misses;
 
     /// <summary>Путь к файлу базы.</summary>
     public string DatabasePath { get; }
@@ -52,9 +60,13 @@ public class ThumbnailCache
         // Если миниатюра уже есть в базе и файл не менялся – берём её оттуда
         var cached = await Task.Run(() => TryGet(fullPath, size, fileSize, modified), token);
         if (cached != null)
+        {
+            Interlocked.Increment(ref _hits);
             return cached;
+        }
 
         // Иначе строим заново
+        Interlocked.Increment(ref _misses);
         var thumb = await Task.Run(() => ThumbnailGenerator.Generate(fullPath, size), token);
         if (thumb != null)
             await Task.Run(() => Save(fullPath, size, fileSize, modified, thumb), token);
@@ -112,6 +124,91 @@ public class ThumbnailCache
         command.ExecuteNonQuery();
     }
 
+    /// <summary>Статистика: число записей, размер базы и попадания за сессию.</summary>
+    public CacheStats GetStats()
+    {
+        using var connection = Open();
+        long count = Scalar(connection, "SELECT COUNT(*) FROM thumbnails");
+        long pages = Scalar(connection, "PRAGMA page_count");
+        long pageSize = Scalar(connection, "PRAGMA page_size");
+        return new CacheStats(count, pages * pageSize, Hits, Misses);
+    }
+
+    /// <summary>Удаляет записи о файлах, которых больше нет. Возвращает число удалённых записей.</summary>
+    public int RemoveMissing()
+    {
+        using var connection = Open();
+
+        var missing = new List<string>();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT DISTINCT path FROM thumbnails";
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var path = reader.GetString(0);
+                if (!File.Exists(path))
+                    missing.Add(path);
+            }
+        }
+
+        int removed = 0;
+        foreach (var path in missing)
+        {
+            using var delete = connection.CreateCommand();
+            delete.CommandText = "DELETE FROM thumbnails WHERE path = $path";
+            delete.Parameters.AddWithValue("$path", path);
+            removed += delete.ExecuteNonQuery();
+        }
+
+        if (removed > 0)
+            Execute(connection, "VACUUM");
+        return removed;
+    }
+
+    /// <summary>Оставляет в кеше не больше maxBytes данных, удаляя давно не открывавшиеся записи.</summary>
+    public int TrimToSize(long maxBytes)
+    {
+        using var connection = Open();
+
+        // Идём от самых свежих записей к старым и считаем, сколько уже набралось
+        var toDelete = new List<(string Path, long Size)>();
+        long total = 0;
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT path, thumb_size, length(data) FROM thumbnails ORDER BY last_access DESC";
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                total += reader.GetInt64(2);
+                if (total > maxBytes)
+                    toDelete.Add((reader.GetString(0), reader.GetInt64(1)));
+            }
+        }
+
+        foreach (var (path, size) in toDelete)
+        {
+            using var delete = connection.CreateCommand();
+            delete.CommandText = "DELETE FROM thumbnails WHERE path = $path AND thumb_size = $size";
+            delete.Parameters.AddWithValue("$path", path);
+            delete.Parameters.AddWithValue("$size", size);
+            delete.ExecuteNonQuery();
+        }
+
+        // VACUUM уменьшает сам файл базы после удаления
+        if (toDelete.Count > 0)
+            Execute(connection, "VACUUM");
+        return toDelete.Count;
+    }
+
+    /// <summary>Полностью очищает кеш.</summary>
+    public void Clear()
+    {
+        using var connection = Open();
+        Execute(connection, "DELETE FROM thumbnails");
+        Execute(connection, "VACUUM");
+    }
+
     private SqliteConnection Open()
     {
         var connection = new SqliteConnection(_connectionString);
@@ -125,4 +222,18 @@ public class ThumbnailCache
         command.CommandText = sql;
         command.ExecuteNonQuery();
     }
+
+    private static long Scalar(SqliteConnection connection, string sql)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        return Convert.ToInt64(command.ExecuteScalar());
+    }
+}
+
+/// <summary>Статистика кеша.</summary>
+public record CacheStats(long Count, long DatabaseBytes, int Hits, int Misses)
+{
+    /// <summary>Процент попаданий в кеш за сессию.</summary>
+    public double HitRate => Hits + Misses == 0 ? 0 : 100.0 * Hits / (Hits + Misses);
 }
