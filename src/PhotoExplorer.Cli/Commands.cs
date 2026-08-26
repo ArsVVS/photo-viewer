@@ -81,6 +81,89 @@ public static class Commands
         return Ok;
     }
 
+    public static async Task<int> ThumbsBuildAsync(string? cachePath, string folder, bool recursive, int size)
+    {
+        if (!Directory.Exists(folder))
+            return Error($"Папка не найдена: {folder}", FileError);
+        if (size < 16 || size > 1024)
+            return Error("Размер миниатюры должен быть от 16 до 1024", ArgumentError);
+
+        // Собираем все файлы (поиск без условий)
+        var files = new List<ImageFileInfo>();
+        var search = new ImageSearch(new FolderBrowser(Settings));
+        await foreach (var file in search.SearchAsync(folder, new SearchOptions { Recursive = recursive }))
+            files.Add(file);
+
+        var cache = new ThumbnailCache(cachePath);
+        var loader = new ThumbnailLoader(cache);
+        int errors = 0;
+        loader.ThumbnailReady += (path, data) =>
+        {
+            if (data == null)
+                Interlocked.Increment(ref errors);
+        };
+        loader.ProgressChanged += (done, total) =>
+        {
+            lock (loader)
+                Console.Write($"\rМиниатюры: {done}/{total}");
+        };
+
+        var started = DateTime.Now;
+        await loader.LoadAsync(files, size);
+        Console.WriteLine();
+
+        var stats = cache.GetStats();
+        Console.WriteLine($"Готово за {(DateTime.Now - started).TotalSeconds:0.0} с. Из кеша: {stats.Hits}, построено: {stats.Misses - errors}, ошибок: {errors}");
+        return Ok;
+    }
+
+    public static async Task<int> ThumbsExportAsync(string? cachePath, string file, string output, int size)
+    {
+        if (!File.Exists(file))
+            return Error($"Файл не найден: {file}", FileError);
+        if (size < 16 || size > 4096)
+            return Error("Размер миниатюры должен быть от 16 до 4096", ArgumentError);
+
+        var thumb = await new ThumbnailCache(cachePath).GetOrCreateAsync(file, size);
+        if (thumb == null)
+            return Error($"Не удалось прочитать изображение: {file}", FileError);
+
+        try
+        {
+            File.WriteAllBytes(output, thumb.Data);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return Error($"Не удалось сохранить файл: {e.Message}", FileError);
+        }
+        Console.WriteLine($"Миниатюра сохранена: {Path.GetFullPath(output)}");
+        return Ok;
+    }
+
+    public static int CacheStats(string? cachePath)
+    {
+        var cache = new ThumbnailCache(cachePath);
+        var stats = cache.GetStats();
+        Console.WriteLine($"База:          {cache.DatabasePath}");
+        Console.WriteLine($"Записей:       {stats.Count}");
+        Console.WriteLine($"Размер базы:   {Formatting.FormatSize(stats.DatabaseBytes)}");
+        return Ok;
+    }
+
+    public static int CacheCleanup(string? cachePath)
+    {
+        int removed = new ThumbnailCache(cachePath).RemoveMissing();
+        Console.WriteLine($"Удалено устаревших записей: {removed}");
+        return Ok;
+    }
+
+    public static int CacheClear(string? cachePath)
+    {
+        new ThumbnailCache(cachePath).Clear();
+        Console.WriteLine("Кеш очищен");
+        return Ok;
+    }
+
     private static void PrintIfSet(string title, string? value)
     {
         if (!string.IsNullOrEmpty(value))

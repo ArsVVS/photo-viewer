@@ -47,4 +47,32 @@ var infoCommand = new Command("info", "Размеры и EXIF изображен
 infoCommand.SetAction(result => Commands.Info(result.GetValue(infoFile)!));
 root.Subcommands.Add(infoCommand);
 
+// photos thumbs build <folder> [--recursive] [--size]
+var buildFolder = new Argument<string>("folder") { Description = "Папка с изображениями" };
+var buildRecursive = new Option<bool>("--recursive", "-r") { Description = "Включая вложенные папки" };
+var buildSize = new Option<int>("--size") { Description = "Размер миниатюры по длинной стороне", DefaultValueFactory = _ => 160 };
+var buildCommand = new Command("build", "Заранее построить миниатюры в кеш") { buildFolder, buildRecursive, buildSize };
+buildCommand.SetAction(result => Commands.ThumbsBuildAsync(result.GetValue(cacheOption),
+    result.GetValue(buildFolder)!, result.GetValue(buildRecursive), result.GetValue(buildSize)));
+
+// photos thumbs export <file> --out thumb.jpg [--size]
+var exportFile = new Argument<string>("file") { Description = "Файл изображения" };
+var exportOut = new Option<string>("--out") { Description = "Куда сохранить миниатюру", Required = true };
+var exportSize = new Option<int>("--size") { Description = "Размер миниатюры по длинной стороне", DefaultValueFactory = _ => 256 };
+var exportCommand = new Command("export", "Сохранить миниатюру в файл") { exportFile, exportOut, exportSize };
+exportCommand.SetAction(result => Commands.ThumbsExportAsync(result.GetValue(cacheOption),
+    result.GetValue(exportFile)!, result.GetValue(exportOut)!, result.GetValue(exportSize)));
+
+root.Subcommands.Add(new Command("thumbs", "Работа с миниатюрами") { buildCommand, exportCommand });
+
+// photos cache stats | cleanup | clear
+var statsCommand = new Command("stats", "Статистика кеша");
+statsCommand.SetAction(result => Commands.CacheStats(result.GetValue(cacheOption)));
+var cleanupCommand = new Command("cleanup", "Удалить записи о несуществующих файлах");
+cleanupCommand.SetAction(result => Commands.CacheCleanup(result.GetValue(cacheOption)));
+var clearCommand = new Command("clear", "Полностью очистить кеш");
+clearCommand.SetAction(result => Commands.CacheClear(result.GetValue(cacheOption)));
+
+root.Subcommands.Add(new Command("cache", "Работа с кешем миниатюр") { statsCommand, cleanupCommand, clearCommand });
+
 return await root.Parse(args).InvokeAsync();
