@@ -4,4 +4,7 @@
     <Project Path="src/PhotoExplorer.Core/PhotoExplorer.Core.csproj" />
     <Project Path="src/PhotoExplorer.Wpf/PhotoExplorer.Wpf.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PhotoExplorer.Core.Tests/PhotoExplorer.Core.Tests.csproj" />
+  </Folder>
 </Solution>
