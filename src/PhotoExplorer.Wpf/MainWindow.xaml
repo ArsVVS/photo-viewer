@@ -9,97 +9,129 @@
         <vm:MainViewModel />
     </Window.DataContext>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" MinWidth="180" />
-            <ColumnDefinition Width="5" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+    <DockPanel>
+        <!-- Строка статуса -->
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem Content="{Binding CountText}" />
+            <Separator />
+            <StatusBarItem Content="{Binding TotalSizeText}" />
+            <Separator />
+            <StatusBarItem Content="{Binding SelectedText}" />
+            <Separator />
+            <StatusBarItem Content="{Binding ProgressText}" />
+        </StatusBar>
 
-        <!-- Левая часть: дерево папок -->
-        <TreeView x:Name="FolderTree" Grid.Column="0" ItemsSource="{Binding RootItems}"
-                  SelectedItemChanged="FolderTree_SelectedItemChanged">
-            <TreeView.ItemContainerStyle>
-                <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
-                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                </Style>
-            </TreeView.ItemContainerStyle>
-            <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Icon}" FontFamily="{StaticResource IconFont}" Margin="0,0,6,0"
-                                   VerticalAlignment="Center" Foreground="Goldenrod" />
-                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                    </StackPanel>
-                </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" MinWidth="180" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" />
+            <!-- Левая часть: дерево папок и предпросмотр -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="100" />
+                    <RowDefinition Height="5" />
+                    <RowDefinition Height="300" MinHeight="120" />
+                </Grid.RowDefinitions>
 
-        <!-- Правая часть -->
-        <DockPanel Grid.Column="2">
-            <!-- Адресная строка -->
-            <DockPanel DockPanel.Dock="Top" Margin="4">
-                <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE72B;"
-                        Command="{Binding BackCommand}" ToolTip="Назад (Alt+←)" />
-                <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE72A;"
-                        Command="{Binding ForwardCommand}" ToolTip="Вперёд (Alt+→)" />
-                <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE74A;"
-                        Command="{Binding UpCommand}" ToolTip="Вверх (Backspace)" />
-                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;"
-                        Command="{Binding GoToAddressCommand}" ToolTip="Перейти" />
-                <TextBox x:Name="AddressBox" Text="{Binding AddressText, UpdateSourceTrigger=PropertyChanged}"
-                         VerticalContentAlignment="Center" Margin="4,0">
-                    <TextBox.InputBindings>
-                        <KeyBinding Key="Enter" Command="{Binding GoToAddressCommand}" />
-                    </TextBox.InputBindings>
-                </TextBox>
+                <TreeView x:Name="FolderTree" Grid.Row="0" ItemsSource="{Binding RootItems}"
+                          SelectedItemChanged="FolderTree_SelectedItemChanged">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Icon}" FontFamily="{StaticResource IconFont}" Margin="0,0,6,0"
+                                           VerticalAlignment="Center" Foreground="Goldenrod" />
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+
+                <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" />
+
+                <!-- Предпросмотр и краткая информация -->
+                <DockPanel Grid.Row="2" Background="#FF202020">
+                    <TextBlock DockPanel.Dock="Bottom" Text="{Binding PreviewInfo}" Foreground="Gainsboro"
+                               Margin="6,4" TextTrimming="CharacterEllipsis" />
+                    <Image Source="{Binding PreviewImage}" Stretch="Uniform" StretchDirection="DownOnly" Margin="4"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                </DockPanel>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" />
+
+            <!-- Правая часть -->
+            <DockPanel Grid.Column="2">
+                <!-- Адресная строка -->
+                <DockPanel DockPanel.Dock="Top" Margin="4">
+                    <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE72B;"
+                            Command="{Binding BackCommand}" ToolTip="Назад (Alt+←)" />
+                    <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE72A;"
+                            Command="{Binding ForwardCommand}" ToolTip="Вперёд (Alt+→)" />
+                    <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE74A;"
+                            Command="{Binding UpCommand}" ToolTip="Вверх (Backspace)" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;"
+                            Command="{Binding GoToAddressCommand}" ToolTip="Перейти" />
+                    <TextBox x:Name="AddressBox" Text="{Binding AddressText, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalContentAlignment="Center" Margin="4,0">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding GoToAddressCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                </DockPanel>
+
+                <!-- Панель инструментов -->
+                <WrapPanel DockPanel.Dock="Top" Margin="4,0,4,4">
+                    <TextBlock Text="Миниатюры:" VerticalAlignment="Center" Margin="4,0" />
+                    <ComboBox Width="110" SelectedValue="{Binding ThumbnailSize}" SelectedValuePath="Tag">
+                        <ComboBoxItem Content="Малые" Tag="{StaticResource SmallSize}" />
+                        <ComboBoxItem Content="Средние" Tag="{StaticResource MediumSize}" />
+                        <ComboBoxItem Content="Крупные" Tag="{StaticResource LargeSize}" />
+                    </ComboBox>
+                </WrapPanel>
+
+                <!-- Сетка миниатюр -->
+                <ListBox x:Name="ThumbList" ItemsSource="{Binding Items}" SelectionMode="Extended"
+                         SelectionChanged="ThumbList_SelectionChanged"
+                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                         VirtualizingPanel.ScrollUnit="Pixel"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <wtk:VirtualizingWrapPanel SpacingMode="Uniform" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Width="{Binding DataContext.TileWidth, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        Margin="2" ToolTip="{Binding File.FullPath}">
+                                <Grid Height="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                                    <Image Source="{Binding Thumbnail}" Stretch="Uniform" StretchDirection="DownOnly"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <!-- Заглушка, пока миниатюра грузится -->
+                                    <TextBlock Text="&#xEB9F;" FontFamily="{StaticResource IconFont}" FontSize="32" Opacity="0.25"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
+                                    <!-- Значок ошибки для повреждённых файлов -->
+                                    <TextBlock Text="&#xE783;" FontFamily="{StaticResource IconFont}" FontSize="32" Foreground="IndianRed"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip="Не удалось прочитать файл"
+                                               Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
+                                </Grid>
+                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                                <TextBlock Text="{Binding Caption}" FontSize="11" Opacity="0.65" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </DockPanel>
-
-            <!-- Панель инструментов -->
-            <WrapPanel DockPanel.Dock="Top" Margin="4,0,4,4">
-                <TextBlock Text="Миниатюры:" VerticalAlignment="Center" Margin="4,0" />
-                <ComboBox Width="110" SelectedValue="{Binding ThumbnailSize}" SelectedValuePath="Tag">
-                    <ComboBoxItem Content="Малые" Tag="{StaticResource SmallSize}" />
-                    <ComboBoxItem Content="Средние" Tag="{StaticResource MediumSize}" />
-                    <ComboBoxItem Content="Крупные" Tag="{StaticResource LargeSize}" />
-                </ComboBox>
-            </WrapPanel>
-
-            <!-- Сетка миниатюр -->
-            <ListBox x:Name="ThumbList" ItemsSource="{Binding Items}" SelectionMode="Extended"
-                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                     VirtualizingPanel.ScrollUnit="Pixel"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <wtk:VirtualizingWrapPanel SpacingMode="Uniform" />
-                    </ItemsPanelTemplate>
-                </ListBox.ItemsPanel>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Width="{Binding DataContext.TileWidth, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                    Margin="2" ToolTip="{Binding File.FullPath}">
-                            <Grid Height="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=ListBox}}">
-                                <Image Source="{Binding Thumbnail}" Stretch="Uniform" StretchDirection="DownOnly"
-                                       RenderOptions.BitmapScalingMode="HighQuality" />
-                                <!-- Заглушка, пока миниатюра грузится -->
-                                <TextBlock Text="&#xEB9F;" FontFamily="{StaticResource IconFont}" FontSize="32" Opacity="0.25"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
-                                <!-- Значок ошибки для повреждённых файлов -->
-                                <TextBlock Text="&#xE783;" FontFamily="{StaticResource IconFont}" FontSize="32" Foreground="IndianRed"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip="Не удалось прочитать файл"
-                                           Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
-                            </Grid>
-                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" Margin="0,4,0,0" />
-                            <TextBlock Text="{Binding Caption}" FontSize="11" Opacity="0.65" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </DockPanel>
-    </Grid>
+        </Grid>
+    </DockPanel>
 </Window>

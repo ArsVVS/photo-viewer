@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PhotoExplorer.Core;
@@ -12,6 +13,9 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly FolderBrowser _browser;
     private readonly ThumbnailLoader _loader;
+
+    // Размер картинки для панели предпросмотра
+    private const int PreviewSize = 600;
 
     // История переходов для кнопок «Назад» и «Вперёд»
     private readonly Stack<string> _backHistory = new();
@@ -47,7 +51,31 @@ public partial class MainViewModel : ObservableObject
 
     // Сколько миниатюр загружено
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressText))]
     public partial int LoadedCount { get; set; }
+
+    // Выделенные плитки
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedText))]
+    public partial List<ThumbnailItemViewModel> SelectedItems { get; set; } = [];
+
+    public ThumbnailItemViewModel? SelectedItem => SelectedItems.FirstOrDefault();
+
+    // Предпросмотр выбранного изображения
+    [ObservableProperty]
+    public partial ImageSource? PreviewImage { get; set; }
+
+    [ObservableProperty]
+    public partial string PreviewInfo { get; set; } = "";
+
+    // Тексты для строки статуса
+    public string CountText => $"Изображений: {Items.Count}";
+    public string TotalSizeText => $"Общий размер: {Formatting.FormatSize(Items.Sum(i => i.File.Size))}";
+    public string SelectedText => $"Выделено: {SelectedItems.Count}";
+    public string ProgressText => LoadedCount < Items.Count ? $"Миниатюры: {LoadedCount} из {Items.Count}" : "Миниатюры загружены";
+
+    // Номер последнего запроса предпросмотра – чтобы старая картинка не перезаписала новую
+    private int _previewVersion;
 
     public MainViewModel()
     {
@@ -123,7 +151,53 @@ public partial class MainViewModel : ObservableObject
         _itemsByPath = items.ToDictionary(i => i.File.FullPath, StringComparer.OrdinalIgnoreCase);
         // Новую коллекцию целиком – так быстрее, чем добавлять по одной
         Items = new ObservableCollection<ThumbnailItemViewModel>(items);
+        SetSelection([]);
+        OnPropertyChanged(nameof(CountText));
+        OnPropertyChanged(nameof(TotalSizeText));
         LoadThumbnails();
+    }
+
+    // Вызывается из окна, когда меняется выделение в сетке
+    public void SetSelection(List<ThumbnailItemViewModel> selected)
+    {
+        SelectedItems = selected;
+        OnPropertyChanged(nameof(SelectedItem));
+        _ = UpdatePreviewAsync();
+    }
+
+    // Загружает картинку для панели предпросмотра
+    private async Task UpdatePreviewAsync()
+    {
+        int version = ++_previewVersion;
+        var item = SelectedItem;
+        if (item == null)
+        {
+            PreviewImage = null;
+            PreviewInfo = "";
+            return;
+        }
+
+        UpdatePreviewInfo();
+        var file = item.File;
+        var image = await Task.Run(() =>
+        {
+            using var bitmap = ThumbnailGenerator.LoadBitmap(file.FullPath, PreviewSize);
+            return bitmap != null ? ImageHelper.FromSkBitmap(bitmap) : null;
+        });
+
+        // Пока грузили, могли выбрать другой файл
+        if (version == _previewVersion)
+            PreviewImage = image;
+    }
+
+    // Краткая информация под предпросмотром: разрешение, размер, дата
+    private void UpdatePreviewInfo()
+    {
+        var file = SelectedItem?.File;
+        if (file == null)
+            return;
+        var info = $"{Formatting.FormatSize(file.Size)}   {file.LastWriteTime:dd.MM.yyyy HH:mm}";
+        PreviewInfo = file.Width.HasValue ? $"{file.Width} x {file.Height}   {info}" : info;
     }
 
     private void LoadThumbnails()
@@ -141,7 +215,12 @@ public partial class MainViewModel : ObservableObject
         Application.Current.Dispatcher.BeginInvoke(() =>
         {
             if (_itemsByPath.TryGetValue(path, out var item))
+            {
                 item.SetThumbnail(image);
+                // Разрешение становится известно только после загрузки миниатюры
+                if (item == SelectedItem)
+                    UpdatePreviewInfo();
+            }
         });
     }
 

@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using PhotoExplorer.Wpf.ViewModels;
 
 namespace PhotoExplorer.Wpf;
@@ -18,5 +19,11 @@ public partial class MainWindow : Window
     {
         if (e.NewValue is FolderItemViewModel folder && folder.Path != "")
             ViewModel.NavigateTo(folder.Path);
+    }
+
+    // SelectedItems у ListBox нельзя привязать напрямую, поэтому передаём вручную
+    private void ThumbList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ViewModel.SetSelection(ThumbList.SelectedItems.Cast<ThumbnailItemViewModel>().ToList());
     }
 }
