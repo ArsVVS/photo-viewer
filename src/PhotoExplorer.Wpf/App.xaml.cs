@@ -1,13 +1,22 @@
-﻿using System.Configuration;
-using System.Data;
 using System.Windows;
+using PhotoExplorer.Core;
 
 namespace PhotoExplorer.Wpf;
 
-/// <summary>
-/// Interaction logic for App.xaml
-/// </summary>
 public partial class App : Application
 {
-}
+    // Настройки и кеш общие для всего приложения
+    public static AppSettings Settings { get; private set; } = new();
+    public static ThumbnailCache Cache { get; private set; } = null!;
 
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+
+        Settings = AppSettings.Load();
+        Cache = new ThumbnailCache();
+
+        var window = new MainWindow();
+        window.Show();
+    }
+}
