@@ -19,4 +19,11 @@ public partial class App : Application
         var window = new MainWindow();
         window.Show();
     }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        // Запоминаем последнюю папку и прочие настройки
+        Settings.Save();
+        base.OnExit(e);
+    }
 }

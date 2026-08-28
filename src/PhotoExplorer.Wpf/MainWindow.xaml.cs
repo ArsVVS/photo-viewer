@@ -10,6 +10,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Loaded += (_, _) => ViewModel.OpenStartFolder();
     }
 
     // Выбрали папку в дереве – открываем её

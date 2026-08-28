@@ -37,7 +37,28 @@
 
         <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" />
 
-        <!-- Правая часть: файлы папки -->
-        <ListBox Grid.Column="2" ItemsSource="{Binding Items}" DisplayMemberPath="Name" />
+        <!-- Правая часть -->
+        <DockPanel Grid.Column="2">
+            <!-- Адресная строка -->
+            <DockPanel DockPanel.Dock="Top" Margin="4">
+                <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE72B;"
+                        Command="{Binding BackCommand}" ToolTip="Назад (Alt+←)" />
+                <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE72A;"
+                        Command="{Binding ForwardCommand}" ToolTip="Вперёд (Alt+→)" />
+                <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE74A;"
+                        Command="{Binding UpCommand}" ToolTip="Вверх (Backspace)" />
+                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;"
+                        Command="{Binding GoToAddressCommand}" ToolTip="Перейти" />
+                <TextBox x:Name="AddressBox" Text="{Binding AddressText, UpdateSourceTrigger=PropertyChanged}"
+                         VerticalContentAlignment="Center" Margin="4,0">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding GoToAddressCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
+            </DockPanel>
+
+            <!-- Файлы папки -->
+            <ListBox ItemsSource="{Binding Items}" DisplayMemberPath="Name" />
+        </DockPanel>
     </Grid>
 </Window>

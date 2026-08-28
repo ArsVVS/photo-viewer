@@ -4,5 +4,15 @@
     <Application.Resources>
         <!-- Шрифт со значками Windows -->
         <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+        <!-- Небольшая кнопка со значком -->
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
     </Application.Resources>
 </Application>
