@@ -1,9 +1,17 @@
 <Application x:Class="PhotoExplorer.Wpf.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime">
     <Application.Resources>
         <!-- Шрифт со значками Windows -->
         <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <!-- Размеры миниатюр (как в AppSettings) -->
+        <sys:Int32 x:Key="SmallSize">100</sys:Int32>
+        <sys:Int32 x:Key="MediumSize">160</sys:Int32>
+        <sys:Int32 x:Key="LargeSize">240</sys:Int32>
 
         <!-- Небольшая кнопка со значком -->
         <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
