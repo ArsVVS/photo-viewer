@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using PhotoExplorer.Core;
 using PhotoExplorer.Core.Models;
 
@@ -35,6 +36,9 @@ public partial class ViewerWindow : Window
     private double _dragOffsetX;
     private double _dragOffsetY;
 
+    // Таймер слайд-шоу
+    private readonly DispatcherTimer _slideShowTimer = new();
+
     private const double MinScale = 0.02;
     private const double MaxScale = 20;
 
@@ -46,7 +50,9 @@ public partial class ViewerWindow : Window
         InitializeComponent();
         _files = files;
         _index = index;
+        _slideShowTimer.Tick += SlideShowTimer_Tick;
         Loaded += (_, _) => _ = ShowCurrentAsync();
+        Closed += (_, _) => _slideShowTimer.Stop();
     }
 
     // Показывает изображение с номером _index
@@ -130,6 +136,47 @@ public partial class ViewerWindow : Window
         {
             _index++;
             _ = ShowCurrentAsync();
+        }
+    }
+
+    // Space – запустить слайд-шоу, повторное нажатие – пауза
+    private void ToggleSlideShow()
+    {
+        if (_slideShowTimer.IsEnabled)
+        {
+            _slideShowTimer.Stop();
+            SlideShowText.Text = "Пауза";
+        }
+        else
+        {
+            // Интервал берём из настроек при каждом запуске
+            _slideShowTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, App.Settings.SlideShowInterval));
+            _slideShowTimer.Start();
+            SlideShowText.Text = $"Слайд-шоу ({App.Settings.SlideShowInterval} с)";
+        }
+        SlideShowBadge.Visibility = Visibility.Visible;
+    }
+
+    private void SlideShowTimer_Tick(object? sender, EventArgs e)
+    {
+        // Подсказку показываем только в начале, чтобы не мешала смотреть
+        SlideShowBadge.Visibility = Visibility.Collapsed;
+
+        if (_index < _files.Count - 1)
+        {
+            Next();
+        }
+        else if (App.Settings.SlideShowLoop)
+        {
+            // Дошли до конца – начинаем сначала
+            _index = 0;
+            _ = ShowCurrentAsync();
+        }
+        else
+        {
+            _slideShowTimer.Stop();
+            SlideShowText.Text = "Слайд-шоу закончилось";
+            SlideShowBadge.Visibility = Visibility.Visible;
         }
     }
 
@@ -265,6 +312,9 @@ public partial class ViewerWindow : Window
                 break;
             case Key.L:
                 Rotate(-90);
+                break;
+            case Key.Space:
+                ToggleSlideShow();
                 break;
             case Key.Escape:
                 Close();

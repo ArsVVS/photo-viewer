@@ -11,6 +11,12 @@
             <Image x:Name="PhotoImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
         </Canvas>
 
+        <!-- Подсказка о состоянии слайд-шоу -->
+        <Border x:Name="SlideShowBadge" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16"
+                Background="#AA000000" CornerRadius="4" Padding="10,6" Visibility="Collapsed">
+            <TextBlock x:Name="SlideShowText" Foreground="White" FontSize="14" />
+        </Border>
+
         <!-- Сообщение, если файл не открылся -->
         <TextBlock x:Name="ErrorText" Foreground="IndianRed" FontSize="18" HorizontalAlignment="Center"
                    VerticalAlignment="Center" Visibility="Collapsed" Text="Не удалось открыть файл" />
