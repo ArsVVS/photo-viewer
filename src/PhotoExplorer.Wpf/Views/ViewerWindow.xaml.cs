@@ -70,8 +70,33 @@ public partial class ViewerWindow : Window
 
         _original = image;
         _rotation = 0;
+        if (InfoPanel.Visibility == Visibility.Visible)
+            _ = UpdateInfoAsync();
         ErrorText.Visibility = image == null ? Visibility.Visible : Visibility.Collapsed;
         UpdateRotatedImage();
+    }
+
+    // I – показать/скрыть информацию о файле
+    private void ToggleInfo()
+    {
+        if (InfoPanel.Visibility == Visibility.Visible)
+        {
+            InfoPanel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            InfoPanel.Visibility = Visibility.Visible;
+            _ = UpdateInfoAsync();
+        }
+    }
+
+    private async Task UpdateInfoAsync()
+    {
+        var file = _files[_index];
+        InfoPosition.Text = $"{_index + 1} из {_files.Count}";
+        var meta = await Task.Run(() => MetadataReader.Read(file.FullPath));
+        if (file == _files[_index])
+            InfoList.ItemsSource = MetadataRows.Build(file, meta);
     }
 
     // Поворот только для просмотра, сам файл не меняется
@@ -312,6 +337,9 @@ public partial class ViewerWindow : Window
                 break;
             case Key.L:
                 Rotate(-90);
+                break;
+            case Key.I:
+                ToggleInfo();
                 break;
             case Key.Space:
                 ToggleSlideShow();

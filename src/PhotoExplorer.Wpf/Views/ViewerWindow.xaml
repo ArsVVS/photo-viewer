@@ -11,6 +11,30 @@
             <Image x:Name="PhotoImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
         </Canvas>
 
+        <!-- Панель с информацией и EXIF (клавиша I) -->
+        <Border x:Name="InfoPanel" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16"
+                Background="#CC000000" CornerRadius="4" Padding="12,8" Visibility="Collapsed"
+                TextElement.FontSize="14">
+            <StackPanel>
+                <TextBlock x:Name="InfoPosition" Foreground="Gray" Margin="0,0,0,6" />
+                <ItemsControl x:Name="InfoList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Name}" Foreground="DarkGray" />
+                                <TextBlock Grid.Column="1" Text="{Binding Value}" Foreground="White" MaxWidth="360"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
         <!-- Подсказка о состоянии слайд-шоу -->
         <Border x:Name="SlideShowBadge" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16"
                 Background="#AA000000" CornerRadius="4" Padding="10,6" Visibility="Collapsed">
