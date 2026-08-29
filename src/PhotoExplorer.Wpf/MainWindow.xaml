@@ -101,6 +101,7 @@
                 <!-- Сетка миниатюр -->
                 <ListBox x:Name="ThumbList" ItemsSource="{Binding Items}" SelectionMode="Extended"
                          SelectionChanged="ThumbList_SelectionChanged"
+                         MouseDoubleClick="ThumbList_MouseDoubleClick" KeyDown="ThumbList_KeyDown"
                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                          VirtualizingPanel.ScrollUnit="Pixel"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
