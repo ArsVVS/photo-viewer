@@ -4,7 +4,9 @@
         Title="Просмотр" WindowStyle="None" ResizeMode="NoResize" WindowState="Maximized"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="Black"
         KeyDown="Window_KeyDown">
-    <Grid x:Name="ViewArea" Background="Black" ClipToBounds="True" SizeChanged="ViewArea_SizeChanged">
+    <Grid x:Name="ViewArea" Background="Black" ClipToBounds="True" SizeChanged="ViewArea_SizeChanged"
+          MouseWheel="ViewArea_MouseWheel" MouseLeftButtonDown="ViewArea_MouseLeftButtonDown"
+          MouseMove="ViewArea_MouseMove" MouseLeftButtonUp="ViewArea_MouseLeftButtonUp">
         <Canvas>
             <Image x:Name="PhotoImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
         </Canvas>

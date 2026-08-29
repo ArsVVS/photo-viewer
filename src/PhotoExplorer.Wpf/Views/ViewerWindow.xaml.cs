@@ -17,13 +17,26 @@ public partial class ViewerWindow : Window
     // Загруженные и загружающиеся картинки: текущая и соседние
     private readonly Dictionary<string, Task<BitmapSource?>> _images = [];
 
-    // Текущая картинка
+    // Текущая картинка: исходная и повёрнутая для просмотра
+    private BitmapSource? _original;
     private BitmapSource? _image;
+    private int _rotation;
 
     // Масштаб и сдвиг картинки на экране
     private double _scale = 1;
     private double _offsetX;
     private double _offsetY;
+
+    // Картинка вписана в экран (тогда при изменении размера окна вписываем заново)
+    private bool _fitMode = true;
+
+    // Перетаскивание мышью
+    private Point? _dragStart;
+    private double _dragOffsetX;
+    private double _dragOffsetY;
+
+    private const double MinScale = 0.02;
+    private const double MaxScale = 20;
 
     /// <summary>Номер последнего просмотренного изображения.</summary>
     public int CurrentIndex => _index;
@@ -49,9 +62,31 @@ public partial class ViewerWindow : Window
         if (file != _files[_index])
             return;
 
-        _image = image;
-        PhotoImage.Source = image;
+        _original = image;
+        _rotation = 0;
         ErrorText.Visibility = image == null ? Visibility.Visible : Visibility.Collapsed;
+        UpdateRotatedImage();
+    }
+
+    // Поворот только для просмотра, сам файл не меняется
+    private void Rotate(int degrees)
+    {
+        if (_original == null)
+            return;
+        _rotation = (_rotation + degrees + 360) % 360;
+        UpdateRotatedImage();
+    }
+
+    private void UpdateRotatedImage()
+    {
+        _image = _original;
+        if (_original != null && _rotation != 0)
+        {
+            var rotated = new TransformedBitmap(_original, new RotateTransform(_rotation));
+            rotated.Freeze();
+            _image = rotated;
+        }
+        PhotoImage.Source = _image;
         FitToScreen();
     }
 
@@ -122,7 +157,16 @@ public partial class ViewerWindow : Window
         var size = ImageSize();
         if (size.Width == 0)
             return;
+        _fitMode = true;
         _scale = Math.Min(1, Math.Min(ViewArea.ActualWidth / size.Width, ViewArea.ActualHeight / size.Height));
+        CenterImage();
+    }
+
+    // Масштаб 100% – один пиксель картинки на один пиксель экрана
+    private void ActualSize()
+    {
+        _fitMode = false;
+        _scale = 1;
         CenterImage();
     }
 
@@ -146,7 +190,56 @@ public partial class ViewerWindow : Window
 
     private void ViewArea_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        FitToScreen();
+        if (_fitMode)
+            FitToScreen();
+        else
+            CenterImage();
+    }
+
+    // Колесо мыши – масштаб относительно курсора
+    private void ViewArea_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (_image == null)
+            return;
+
+        double factor = e.Delta > 0 ? 1.2 : 1 / 1.2;
+        double newScale = Math.Clamp(_scale * factor, MinScale, MaxScale);
+
+        // Точка под курсором должна остаться на месте
+        var mouse = e.GetPosition(ViewArea);
+        _offsetX = mouse.X - (mouse.X - _offsetX) * newScale / _scale;
+        _offsetY = mouse.Y - (mouse.Y - _offsetY) * newScale / _scale;
+        _scale = newScale;
+        _fitMode = false;
+        ApplyTransform();
+    }
+
+    // Перетаскивание картинки мышью
+    private void ViewArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragStart = e.GetPosition(ViewArea);
+        _dragOffsetX = _offsetX;
+        _dragOffsetY = _offsetY;
+        ViewArea.CaptureMouse();
+        Cursor = Cursors.SizeAll;
+    }
+
+    private void ViewArea_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_dragStart == null)
+            return;
+        var position = e.GetPosition(ViewArea);
+        _offsetX = _dragOffsetX + position.X - _dragStart.Value.X;
+        _offsetY = _dragOffsetY + position.Y - _dragStart.Value.Y;
+        _fitMode = false;
+        ApplyTransform();
+    }
+
+    private void ViewArea_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _dragStart = null;
+        ViewArea.ReleaseMouseCapture();
+        Cursor = null;
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -158,6 +251,20 @@ public partial class ViewerWindow : Window
                 break;
             case Key.Left:
                 Previous();
+                break;
+            case Key.D0:
+            case Key.NumPad0:
+                FitToScreen();
+                break;
+            case Key.D1:
+            case Key.NumPad1:
+                ActualSize();
+                break;
+            case Key.R:
+                Rotate(90);
+                break;
+            case Key.L:
+                Rotate(-90);
                 break;
             case Key.Escape:
                 Close();
