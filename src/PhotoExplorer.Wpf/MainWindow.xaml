@@ -133,6 +133,8 @@
                             <Separator />
                             <MenuItem Header="Показать в проводнике" Click="MenuShowInExplorer_Click" />
                             <MenuItem Header="Копировать путь" Click="MenuCopyPath_Click" />
+                            <Separator />
+                            <MenuItem Header="Свойства" InputGestureText="Alt+Enter" Click="MenuProperties_Click" />
                         </ContextMenu>
                     </ListBox.ContextMenu>
                     <ListBox.ItemsPanel>

@@ -46,6 +46,12 @@ public partial class MainWindow : Window
             OpenViewer();
             e.Handled = true;
         }
+        // Alt+Enter приходит как «системная» клавиша
+        else if (e.Key == Key.System && e.SystemKey == Key.Enter)
+        {
+            ShowProperties();
+            e.Handled = true;
+        }
     }
 
     // Меню по пустому месту не показываем
@@ -72,6 +78,16 @@ public partial class MainWindow : Window
     {
         var paths = ViewModel.SelectedItems.Select(i => i.File.FullPath);
         Clipboard.SetText(string.Join(Environment.NewLine, paths));
+    }
+
+    private void MenuProperties_Click(object sender, RoutedEventArgs e) => ShowProperties();
+
+    // Окно свойств выбранного изображения
+    public void ShowProperties()
+    {
+        var item = ViewModel.SelectedItem;
+        if (item != null)
+            new PropertiesWindow(item.File) { Owner = this }.ShowDialog();
     }
 
     // Переименование выбранного файла

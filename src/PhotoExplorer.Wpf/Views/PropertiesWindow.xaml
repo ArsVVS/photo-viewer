@@ -1,0 +1,18 @@
+<Window x:Class="PhotoExplorer.Wpf.Views.PropertiesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Свойства" Width="520" Height="420" MinWidth="360" MinHeight="250"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel Margin="12">
+        <Button DockPanel.Dock="Bottom" Content="Закрыть" Width="90" HorizontalAlignment="Right"
+                Margin="0,12,0,0" IsCancel="True" IsDefault="True" />
+        <DataGrid x:Name="Table" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal" CanUserSortColumns="False"
+                  HorizontalGridLinesBrush="#33808080">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Свойство" Binding="{Binding Name}" Width="140" />
+                <DataGridTextColumn Header="Значение" Binding="{Binding Value}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>
