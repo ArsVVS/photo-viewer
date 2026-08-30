@@ -121,9 +121,20 @@
                 <ListBox x:Name="ThumbList" ItemsSource="{Binding Items}" SelectionMode="Extended"
                          SelectionChanged="ThumbList_SelectionChanged"
                          MouseDoubleClick="ThumbList_MouseDoubleClick" KeyDown="ThumbList_KeyDown"
+                         ContextMenuOpening="ThumbList_ContextMenuOpening"
                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                          VirtualizingPanel.ScrollUnit="Pixel"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Открыть на весь экран" InputGestureText="Enter" Click="MenuOpen_Click" />
+                            <MenuItem Header="Переименовать" InputGestureText="F2" Click="MenuRename_Click" />
+                            <MenuItem Header="Удалить в корзину" InputGestureText="Delete" Click="MenuDelete_Click" />
+                            <Separator />
+                            <MenuItem Header="Показать в проводнике" Click="MenuShowInExplorer_Click" />
+                            <MenuItem Header="Копировать путь" Click="MenuCopyPath_Click" />
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <wtk:VirtualizingWrapPanel SpacingMode="Uniform" />

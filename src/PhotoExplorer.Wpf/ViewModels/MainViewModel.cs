@@ -385,6 +385,32 @@ public partial class MainViewModel : ObservableObject
             LoadThumbnails();
     }
 
+    // Обновить папку (или повторить поиск)
+    [RelayCommand]
+    public void Refresh()
+    {
+        if (CurrentFolder == "")
+            return;
+        if (!string.IsNullOrWhiteSpace(SearchText) || SearchRecursive)
+            _ = RunSearchAsync();
+        else
+            LoadFolder();
+    }
+
+    // Убирает из сетки удалённые файлы
+    public void RemoveItems(List<ThumbnailItemViewModel> removed)
+    {
+        foreach (var item in removed)
+        {
+            Items.Remove(item);
+            _files.Remove(item.File);
+            _itemsByPath.Remove(item.File.FullPath);
+        }
+        UpdateCounters();
+    }
+
+    public ThumbnailItemViewModel? FindItem(string path) => _itemsByPath.GetValueOrDefault(path);
+
     private bool CanGoBack() => _backHistory.Count > 0;
 
     [RelayCommand(CanExecute = nameof(CanGoBack))]

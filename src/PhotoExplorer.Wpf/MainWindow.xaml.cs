@@ -1,6 +1,9 @@
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using PhotoExplorer.Core;
 using PhotoExplorer.Wpf.ViewModels;
 using PhotoExplorer.Wpf.Views;
 
@@ -43,6 +46,95 @@ public partial class MainWindow : Window
             OpenViewer();
             e.Handled = true;
         }
+    }
+
+    // Меню по пустому месту не показываем
+    private void ThumbList_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (ViewModel.SelectedItems.Count == 0)
+            e.Handled = true;
+    }
+
+    private void MenuOpen_Click(object sender, RoutedEventArgs e) => OpenViewer();
+
+    private void MenuRename_Click(object sender, RoutedEventArgs e) => RenameSelected();
+
+    private void MenuDelete_Click(object sender, RoutedEventArgs e) => DeleteSelected();
+
+    private void MenuShowInExplorer_Click(object sender, RoutedEventArgs e)
+    {
+        var item = ViewModel.SelectedItem;
+        if (item != null)
+            Process.Start("explorer.exe", $"/select,\"{item.File.FullPath}\"");
+    }
+
+    private void MenuCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        var paths = ViewModel.SelectedItems.Select(i => i.File.FullPath);
+        Clipboard.SetText(string.Join(Environment.NewLine, paths));
+    }
+
+    // Переименование выбранного файла
+    public void RenameSelected()
+    {
+        var item = ViewModel.SelectedItem;
+        if (item == null)
+            return;
+
+        var dialog = new RenameWindow(item.Name) { Owner = this };
+        if (dialog.ShowDialog() != true || dialog.NewName == item.Name)
+            return;
+
+        try
+        {
+            var newPath = FileOperations.Rename(item.File.FullPath, dialog.NewName);
+            ViewModel.Refresh();
+            SelectFile(newPath);
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(ex.Message, "Переименовать", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // Удаление выбранных файлов в корзину (с подтверждением)
+    public void DeleteSelected()
+    {
+        var items = ViewModel.SelectedItems.ToList();
+        if (items.Count == 0)
+            return;
+
+        var question = items.Count == 1
+            ? $"Удалить файл «{items[0].Name}» в корзину?"
+            : $"Удалить выбранные файлы ({items.Count} шт.) в корзину?";
+        if (MessageBox.Show(question, "Удаление", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        var deleted = new List<ThumbnailItemViewModel>();
+        foreach (var item in items)
+        {
+            try
+            {
+                FileOperations.DeleteToRecycleBin(item.File.FullPath);
+                deleted.Add(item);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException)
+            {
+                MessageBox.Show($"Не удалось удалить «{item.Name}»:\n{ex.Message}", "Удаление",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        ViewModel.RemoveItems(deleted);
+    }
+
+    // Выделяет файл в сетке и прокручивает к нему
+    public void SelectFile(string path)
+    {
+        var item = ViewModel.FindItem(path);
+        if (item == null)
+            return;
+        ThumbList.SelectedItem = item;
+        ThumbList.ScrollIntoView(item);
     }
 
     // Открывает полноэкранный просмотр выбранного изображения
