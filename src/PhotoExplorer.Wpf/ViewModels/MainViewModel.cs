@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PhotoExplorer.Core;
@@ -72,7 +73,41 @@ public partial class MainViewModel : ObservableObject
     public string CountText => $"Изображений: {Items.Count}";
     public string TotalSizeText => $"Общий размер: {Formatting.FormatSize(Items.Sum(i => i.File.Size))}";
     public string SelectedText => $"Выделено: {SelectedItems.Count}";
-    public string ProgressText => LoadedCount < Items.Count ? $"Миниатюры: {LoadedCount} из {Items.Count}" : "Миниатюры загружены";
+    public string ProgressText => IsSearching ? "Идёт поиск..."
+        : LoadedCount < _loadTotal ? $"Миниатюры: {LoadedCount} из {_loadTotal}" : "Миниатюры загружены";
+
+    // Сколько миниатюр в текущей загрузке
+    private int _loadTotal;
+
+    // Сортировка и фильтр по типу
+    [ObservableProperty]
+    public partial SortField SortField { get; set; } = SortField.Name;
+
+    [ObservableProperty]
+    public partial bool SortDescending { get; set; }
+
+    [ObservableProperty]
+    public partial List<string> TypeFilters { get; set; }
+
+    [ObservableProperty]
+    public partial string TypeFilter { get; set; }
+
+    // Поиск по имени
+    [ObservableProperty]
+    public partial string SearchText { get; set; } = "";
+
+    [ObservableProperty]
+    public partial bool SearchRecursive { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressText))]
+    public partial bool IsSearching { get; set; }
+
+    private readonly DispatcherTimer _searchTimer;
+    private CancellationTokenSource? _searchCts;
+
+    // Когда поле поиска очищается при переходе в другую папку, искать не нужно
+    private bool _suppressSearch;
 
     // Номер последнего запроса предпросмотра – чтобы старая картинка не перезаписала новую
     private int _previewVersion;
@@ -83,7 +118,22 @@ public partial class MainViewModel : ObservableObject
 
         _loader = new ThumbnailLoader(App.Cache);
         _loader.ThumbnailReady += Loader_ThumbnailReady;
-        _loader.ProgressChanged += (done, _) => Application.Current.Dispatcher.BeginInvoke(() => LoadedCount = done);
+        _loader.ProgressChanged += (done, total) => Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            _loadTotal = total;
+            LoadedCount = done;
+        });
+
+        TypeFilters = ["Все типы", .. App.Settings.Extensions.Select(e => e.TrimStart('.').ToUpperInvariant())];
+        TypeFilter = TypeFilters[0];
+
+        // Поиск запускается, когда пользователь перестал печатать
+        _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        _searchTimer.Tick += (_, _) =>
+        {
+            _searchTimer.Stop();
+            _ = RunSearchAsync();
+        };
 
         ThumbnailSize = App.Settings.ThumbnailSize;
 
@@ -132,6 +182,13 @@ public partial class MainViewModel : ObservableObject
         ForwardCommand.NotifyCanExecuteChanged();
         UpCommand.NotifyCanExecuteChanged();
 
+        // В новой папке начинаем без поиска
+        CancelSearch();
+        _suppressSearch = true;
+        SearchText = "";
+        SearchRecursive = false;
+        _suppressSearch = false;
+
         LoadFolder();
     }
 
@@ -139,22 +196,116 @@ public partial class MainViewModel : ObservableObject
     private void LoadFolder()
     {
         _files = _browser.GetImages(CurrentFolder);
+        // Папку читаем заново – старые плитки не используем
+        _itemsByPath.Clear();
         ShowFiles();
     }
 
-    // Показывает файлы в сетке и запускает загрузку миниатюр
+    // Показывает файлы в сетке (с фильтром и сортировкой) и загружает недостающие миниатюры
     private void ShowFiles()
     {
-        var sorted = ImageSorter.Sort(_files, SortField.Name);
-        var items = sorted.Select(f => new ThumbnailItemViewModel(f)).ToList();
+        var filtered = _files.Where(PassesTypeFilter);
+        var sorted = ImageSorter.Sort(filtered, SortField, SortDescending);
+
+        // Уже загруженные плитки используем повторно, чтобы не грузить миниатюры заново
+        var items = sorted.Select(f => _itemsByPath.GetValueOrDefault(f.FullPath) ?? new ThumbnailItemViewModel(f)).ToList();
 
         _itemsByPath = items.ToDictionary(i => i.File.FullPath, StringComparer.OrdinalIgnoreCase);
         // Новую коллекцию целиком – так быстрее, чем добавлять по одной
         Items = new ObservableCollection<ThumbnailItemViewModel>(items);
         SetSelection([]);
+        UpdateCounters();
+        LoadThumbnails(onlyMissing: true);
+    }
+
+    private void UpdateCounters()
+    {
         OnPropertyChanged(nameof(CountText));
         OnPropertyChanged(nameof(TotalSizeText));
-        LoadThumbnails();
+    }
+
+    private bool PassesTypeFilter(ImageFileInfo file)
+    {
+        if (TypeFilter == TypeFilters[0])
+            return true;
+        return string.Equals(file.Extension.TrimStart('.'), TypeFilter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    partial void OnSortFieldChanged(SortField value) => ShowFiles();
+
+    partial void OnSortDescendingChanged(bool value) => ShowFiles();
+
+    partial void OnTypeFilterChanged(string value)
+    {
+        // Первый раз вызывается из конструктора, когда папка ещё не открыта
+        if (CurrentFolder != "")
+            ShowFiles();
+    }
+
+    partial void OnSearchTextChanged(string value) => RestartSearchTimer();
+
+    partial void OnSearchRecursiveChanged(bool value) => RestartSearchTimer();
+
+    private void RestartSearchTimer()
+    {
+        if (_suppressSearch)
+            return;
+        _searchTimer.Stop();
+        _searchTimer.Start();
+    }
+
+    private void CancelSearch()
+    {
+        _searchTimer.Stop();
+        _searchCts?.Cancel();
+        _searchCts = null;
+        IsSearching = false;
+    }
+
+    // Поиск в текущей папке (и во вложенных, если стоит флажок).
+    // Найденные файлы появляются в сетке сразу, по мере нахождения.
+    private async Task RunSearchAsync()
+    {
+        CancelSearch();
+        if (string.IsNullOrWhiteSpace(SearchText) && !SearchRecursive)
+        {
+            LoadFolder();
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _searchCts = cts;
+        IsSearching = true;
+
+        _loader.Cancel();
+        _files = [];
+        _itemsByPath = new Dictionary<string, ThumbnailItemViewModel>(StringComparer.OrdinalIgnoreCase);
+        Items = [];
+        SetSelection([]);
+
+        var options = new SearchOptions { Name = SearchText, Recursive = SearchRecursive };
+        try
+        {
+            await foreach (var file in new ImageSearch(_browser).SearchAsync(CurrentFolder, options, cts.Token))
+            {
+                _files.Add(file);
+                if (PassesTypeFilter(file))
+                {
+                    var item = new ThumbnailItemViewModel(file);
+                    _itemsByPath[file.FullPath] = item;
+                    Items.Add(item);
+                    UpdateCounters();
+                }
+            }
+
+            // Поиск закончен – сортируем и грузим миниатюры
+            IsSearching = false;
+            ShowFiles();
+        }
+        catch (OperationCanceledException)
+        {
+            // Поиск отменили (новый запрос или смена папки)
+        }
     }
 
     // Вызывается из окна, когда меняется выделение в сетке
@@ -200,12 +351,15 @@ public partial class MainViewModel : ObservableObject
         PreviewInfo = file.Width.HasValue ? $"{file.Width} x {file.Height}   {info}" : info;
     }
 
-    private void LoadThumbnails()
+    // Загружает миниатюры: все или только те, которых ещё нет
+    private void LoadThumbnails(bool onlyMissing = false)
     {
-        foreach (var item in Items)
+        var toLoad = Items.Where(i => !onlyMissing || i.IsLoading).ToList();
+        foreach (var item in toLoad)
             item.IsLoading = true;
+        _loadTotal = toLoad.Count;
         LoadedCount = 0;
-        _ = _loader.LoadAsync(Items.Select(i => i.File).ToList(), ThumbnailSize);
+        _ = _loader.LoadAsync(toLoad.Select(i => i.File).ToList(), ThumbnailSize);
     }
 
     // Вызывается из фонового потока, когда готова очередная миниатюра

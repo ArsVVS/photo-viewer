@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:PhotoExplorer.Wpf.ViewModels"
+        xmlns:core="clr-namespace:PhotoExplorer.Core;assembly=PhotoExplorer.Core"
         xmlns:wtk="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
         Title="Фото проводник" Height="760" Width="1200" MinHeight="400" MinWidth="700"
         WindowStartupLocation="CenterScreen">
@@ -96,6 +97,24 @@
                         <ComboBoxItem Content="Средние" Tag="{StaticResource MediumSize}" />
                         <ComboBoxItem Content="Крупные" Tag="{StaticResource LargeSize}" />
                     </ComboBox>
+
+                    <TextBlock Text="Сортировка:" VerticalAlignment="Center" Margin="12,0,4,0" />
+                    <ComboBox Width="110" SelectedValue="{Binding SortField}" SelectedValuePath="Tag">
+                        <ComboBoxItem Content="Имя" Tag="{x:Static core:SortField.Name}" />
+                        <ComboBoxItem Content="Дата" Tag="{x:Static core:SortField.Date}" />
+                        <ComboBoxItem Content="Размер" Tag="{x:Static core:SortField.Size}" />
+                        <ComboBoxItem Content="Тип" Tag="{x:Static core:SortField.Type}" />
+                    </ComboBox>
+                    <ToggleButton IsChecked="{Binding SortDescending}" Width="30" Margin="2,0" Content="&#xE74B;"
+                                  FontFamily="{StaticResource IconFont}" ToolTip="По убыванию" />
+
+                    <TextBlock Text="Тип:" VerticalAlignment="Center" Margin="12,0,4,0" />
+                    <ComboBox Width="100" ItemsSource="{Binding TypeFilters}" SelectedItem="{Binding TypeFilter}" />
+
+                    <TextBlock Text="&#xE721;" FontFamily="{StaticResource IconFont}" VerticalAlignment="Center" Margin="12,0,4,0" />
+                    <TextBox x:Name="SearchBox" Width="180" VerticalContentAlignment="Center"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Имя или маска (* и ?), Ctrl+F" />
+                    <CheckBox Content="Во вложенных папках" IsChecked="{Binding SearchRecursive}" VerticalAlignment="Center" Margin="8,0" />
                 </WrapPanel>
 
                 <!-- Сетка миниатюр -->
