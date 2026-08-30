@@ -79,7 +79,9 @@
                             Command="{Binding ForwardCommand}" ToolTip="Вперёд (Alt+→)" />
                     <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE74A;"
                             Command="{Binding UpCommand}" ToolTip="Вверх (Backspace)" />
-                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;"
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE734;"
+                        Command="{Binding AddToFavoritesCommand}" ToolTip="Добавить папку в избранное (Ctrl+D)" />
+                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;"
                             Command="{Binding GoToAddressCommand}" ToolTip="Перейти" />
                     <TextBox x:Name="AddressBox" Text="{Binding AddressText, UpdateSourceTrigger=PropertyChanged}"
                              VerticalContentAlignment="Center" Margin="4,0">
@@ -133,6 +135,8 @@
                             <Separator />
                             <MenuItem Header="Показать в проводнике" Click="MenuShowInExplorer_Click" />
                             <MenuItem Header="Копировать путь" Click="MenuCopyPath_Click" />
+                            <MenuItem Header="Добавить папку в избранное" InputGestureText="Ctrl+D"
+                                      Command="{Binding AddToFavoritesCommand}" />
                             <Separator />
                             <MenuItem Header="Свойства" InputGestureText="Alt+Enter" Click="MenuProperties_Click" />
                         </ContextMenu>

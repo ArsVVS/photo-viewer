@@ -31,6 +31,9 @@ public partial class MainViewModel : ObservableObject
     // Корни дерева папок
     public ObservableCollection<FolderItemViewModel> RootItems { get; } = [];
 
+    // Раздел «Избранное» в дереве
+    private readonly FolderItemViewModel _favoritesRoot = new("Избранное", "", Icons.Star, null) { IsExpanded = true };
+
     // Плитки в сетке миниатюр
     [ObservableProperty]
     public partial ObservableCollection<ThumbnailItemViewModel> Items { get; set; } = [];
@@ -151,14 +154,44 @@ public partial class MainViewModel : ObservableObject
         NavigateTo(folder);
     }
 
-    // Строит дерево: «Этот компьютер» со списком дисков
+    // Строит дерево: «Избранное» сверху, ниже «Этот компьютер» со списком дисков
     private void LoadTree()
     {
         RootItems.Clear();
+        RefreshFavorites();
+        RootItems.Add(_favoritesRoot);
+
         var computer = new FolderItemViewModel("Этот компьютер", "", Icons.Computer, null) { IsExpanded = true };
         foreach (var drive in _browser.GetDrives())
             computer.Children.Add(new FolderItemViewModel(drive.Name, drive.Path, Icons.Drive, _browser, drive.HasSubfolders));
         RootItems.Add(computer);
+    }
+
+    // Перестраивает список избранных папок в дереве
+    public void RefreshFavorites()
+    {
+        _favoritesRoot.Children.Clear();
+        foreach (var path in App.Settings.Favorites)
+        {
+            if (!Directory.Exists(path))
+                continue;
+            var name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar));
+            if (name == "")
+                name = path; // корень диска
+            bool hasSubfolders = _browser.GetSubfolders(path).Count > 0;
+            _favoritesRoot.Children.Add(new FolderItemViewModel(name, path, Icons.Folder, _browser, hasSubfolders));
+        }
+    }
+
+    // Добавляет текущую папку в избранное
+    [RelayCommand]
+    private void AddToFavorites()
+    {
+        if (CurrentFolder == "" || App.Settings.Favorites.Contains(CurrentFolder, StringComparer.OrdinalIgnoreCase))
+            return;
+        App.Settings.Favorites.Add(CurrentFolder);
+        App.Settings.Save();
+        RefreshFavorites();
     }
 
     // Открывает папку. addToHistory = false – для переходов «Назад»/«Вперёд»

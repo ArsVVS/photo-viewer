@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -29,6 +30,8 @@ public class AppSettings
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
+        // Русские буквы в путях сохраняем как есть
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         Converters = { new JsonStringEnumConverter() }
     };
 

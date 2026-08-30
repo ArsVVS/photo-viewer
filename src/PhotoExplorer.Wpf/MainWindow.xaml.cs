@@ -54,11 +54,15 @@ public partial class MainWindow : Window
         }
     }
 
-    // Меню по пустому месту не показываем
+    // Если ничего не выделено, пункты для файлов недоступны (избранное работает всегда)
     private void ThumbList_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (ViewModel.SelectedItems.Count == 0)
-            e.Handled = true;
+        bool hasSelection = ViewModel.SelectedItems.Count > 0;
+        foreach (var item in ThumbList.ContextMenu.Items.OfType<MenuItem>())
+        {
+            if (item.Command == null)
+                item.IsEnabled = hasSelection;
+        }
     }
 
     private void MenuOpen_Click(object sender, RoutedEventArgs e) => OpenViewer();
