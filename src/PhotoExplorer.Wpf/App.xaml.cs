@@ -21,7 +21,9 @@ public partial class App : Application
         long maxBytes = Settings.MaxCacheSizeMb * 1024L * 1024L;
         Task.Run(() => Cache.TrimToSize(maxBytes));
 
-        var window = new MainWindow();
+        // Путь из командной строки: папка или файл
+        var startPath = e.Args.Length > 0 ? e.Args[0] : null;
+        var window = new MainWindow(startPath);
         window.Show();
     }
 

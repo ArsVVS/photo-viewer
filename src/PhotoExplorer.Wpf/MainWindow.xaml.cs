@@ -13,10 +13,31 @@ public partial class MainWindow : Window
 {
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
-    public MainWindow()
+    public MainWindow(string? startPath = null)
     {
         InitializeComponent();
-        Loaded += (_, _) => ViewModel.OpenStartFolder();
+        Loaded += (_, _) => OpenStartPath(startPath);
+    }
+
+    // Запуск с аргументом: папка – открываем её, файл – открываем папку и сразу просмотр
+    private void OpenStartPath(string? path)
+    {
+        if (path != null && Directory.Exists(path))
+        {
+            ViewModel.NavigateTo(path);
+        }
+        else if (path != null && File.Exists(path))
+        {
+            var fullPath = Path.GetFullPath(path);
+            ViewModel.NavigateTo(Path.GetDirectoryName(fullPath)!);
+            SelectFile(fullPath);
+            if (ThumbList.SelectedItem != null)
+                OpenViewer();
+        }
+        else
+        {
+            ViewModel.OpenStartFolder();
+        }
     }
 
     private void Help_Click(object sender, RoutedEventArgs e) => new HelpWindow { Owner = this }.ShowDialog();

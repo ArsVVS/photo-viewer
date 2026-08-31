@@ -51,7 +51,13 @@ public partial class ViewerWindow : Window
         _files = files;
         _index = index;
         _slideShowTimer.Tick += SlideShowTimer_Tick;
-        Loaded += (_, _) => _ = ShowCurrentAsync();
+        Loaded += (_, _) =>
+        {
+            // При запуске с файлом окно открывается сразу – забираем фокус клавиатуры себе
+            Activate();
+            Focus();
+            _ = ShowCurrentAsync();
+        };
         Closed += (_, _) => _slideShowTimer.Stop();
     }
 
