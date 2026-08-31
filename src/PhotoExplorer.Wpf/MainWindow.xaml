@@ -5,7 +5,7 @@
         xmlns:core="clr-namespace:PhotoExplorer.Core;assembly=PhotoExplorer.Core"
         xmlns:wtk="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
         Title="Фото проводник" Height="760" Width="1200" MinHeight="400" MinWidth="700"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown">
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
@@ -79,12 +79,14 @@
                             Command="{Binding ForwardCommand}" ToolTip="Вперёд (Alt+→)" />
                     <Button DockPanel.Dock="Left" Style="{StaticResource IconButton}" Content="&#xE74A;"
                             Command="{Binding UpCommand}" ToolTip="Вверх (Backspace)" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE897;"
+                            Click="Help_Click" ToolTip="Справка (F1)" />
                     <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE713;"
-                        Click="Settings_Click" ToolTip="Настройки" />
-                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE734;"
-                        Command="{Binding AddToFavoritesCommand}" ToolTip="Добавить папку в избранное (Ctrl+D)" />
-                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;"
-                            Command="{Binding GoToAddressCommand}" ToolTip="Перейти" />
+                            Click="Settings_Click" ToolTip="Настройки" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE734;"
+                            Command="{Binding AddToFavoritesCommand}" ToolTip="Добавить папку в избранное (Ctrl+D)" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;"
+                            Command="{Binding RefreshCommand}" ToolTip="Обновить (F5)" />
                     <TextBox x:Name="AddressBox" Text="{Binding AddressText, UpdateSourceTrigger=PropertyChanged}"
                              VerticalContentAlignment="Center" Margin="4,0">
                         <TextBox.InputBindings>

@@ -19,6 +19,8 @@ public partial class MainWindow : Window
         Loaded += (_, _) => ViewModel.OpenStartFolder();
     }
 
+    private void Help_Click(object sender, RoutedEventArgs e) => new HelpWindow { Owner = this }.ShowDialog();
+
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new SettingsWindow { Owner = this };
@@ -56,12 +58,47 @@ public partial class MainWindow : Window
             OpenViewer();
             e.Handled = true;
         }
-        // Alt+Enter приходит как «системная» клавиша
+    }
+
+    // Горячие клавиши главного окна
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        // Пока пользователь печатает в поле, Backspace, Delete и Ctrl+A работают как обычно
+        bool inTextBox = Keyboard.FocusedElement is TextBox;
+        bool ctrl = Keyboard.Modifiers == ModifierKeys.Control;
+        e.Handled = true;
+
+        // Сочетания с Alt приходят как «системная» клавиша
+        if (e.Key == Key.System && e.SystemKey == Key.Left)
+            ViewModel.BackCommand.Execute(null);
+        else if (e.Key == Key.System && e.SystemKey == Key.Right)
+            ViewModel.ForwardCommand.Execute(null);
         else if (e.Key == Key.System && e.SystemKey == Key.Enter)
-        {
             ShowProperties();
-            e.Handled = true;
-        }
+        else if (e.Key == Key.F1)
+            Help_Click(this, e);
+        else if (e.Key == Key.F2)
+            RenameSelected();
+        else if (e.Key == Key.F5)
+            ViewModel.Refresh();
+        else if (e.Key == Key.Back && !inTextBox)
+            ViewModel.UpCommand.Execute(null);
+        else if (e.Key == Key.Delete && !inTextBox)
+            DeleteSelected();
+        else if (ctrl && e.Key == Key.F)
+            SearchBox.Focus();
+        else if (ctrl && e.Key == Key.D)
+            ViewModel.AddToFavoritesCommand.Execute(null);
+        else if (ctrl && e.Key == Key.A && !inTextBox)
+            ThumbList.SelectAll();
+        else if (ctrl && e.Key is Key.D1 or Key.NumPad1)
+            ViewModel.ThumbnailSize = AppSettings.SmallThumbnail;
+        else if (ctrl && e.Key is Key.D2 or Key.NumPad2)
+            ViewModel.ThumbnailSize = AppSettings.MediumThumbnail;
+        else if (ctrl && e.Key is Key.D3 or Key.NumPad3)
+            ViewModel.ThumbnailSize = AppSettings.LargeThumbnail;
+        else
+            e.Handled = false;
     }
 
     // Если ничего не выделено, пункты для файлов недоступны (избранное работает всегда)
