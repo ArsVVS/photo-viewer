@@ -1,7 +1,8 @@
 <Application x:Class="PhotoExplorer.Wpf.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             ThemeMode="Light">
     <Application.Resources>
         <!-- Шрифт со значками Windows -->
         <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>

@@ -15,9 +15,22 @@ public partial class App : Application
 
         Settings = AppSettings.Load();
         Cache = new ThumbnailCache();
+        ApplyTheme();
+
+        // Если кеш вырос больше заданного размера – удаляем давно не открывавшиеся миниатюры
+        long maxBytes = Settings.MaxCacheSizeMb * 1024L * 1024L;
+        Task.Run(() => Cache.TrimToSize(maxBytes));
 
         var window = new MainWindow();
         window.Show();
+    }
+
+    // Светлая или тёмная тема (встроенная тема Fluent)
+    public static void ApplyTheme()
+    {
+#pragma warning disable WPF0001 // ThemeMode в WPF пока помечен как экспериментальный
+        Current.ThemeMode = Settings.Theme == AppTheme.Dark ? ThemeMode.Dark : ThemeMode.Light;
+#pragma warning restore WPF0001
     }
 
     protected override void OnExit(ExitEventArgs e)

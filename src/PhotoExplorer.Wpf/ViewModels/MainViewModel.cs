@@ -167,6 +167,25 @@ public partial class MainViewModel : ObservableObject
         RootItems.Add(computer);
     }
 
+    // Применяет изменённые настройки без перезапуска
+    public void ApplySettings()
+    {
+        ThumbnailSize = App.Settings.ThumbnailSize;
+
+        // Список расширений мог поменяться
+        TypeFilters = ["Все типы", .. App.Settings.Extensions.Select(e => e.TrimStart('.').ToUpperInvariant())];
+        _suppressTypeFilter = true;
+        TypeFilter = TypeFilters[0];
+        _suppressTypeFilter = false;
+
+        // Скрытые папки и избранное – перестраиваем дерево
+        LoadTree();
+        Refresh();
+
+        long maxBytes = App.Settings.MaxCacheSizeMb * 1024L * 1024L;
+        Task.Run(() => App.Cache.TrimToSize(maxBytes));
+    }
+
     // Перестраивает список избранных папок в дереве
     public void RefreshFavorites()
     {
@@ -271,9 +290,11 @@ public partial class MainViewModel : ObservableObject
     partial void OnTypeFilterChanged(string value)
     {
         // Первый раз вызывается из конструктора, когда папка ещё не открыта
-        if (CurrentFolder != "")
+        if (CurrentFolder != "" && !_suppressTypeFilter)
             ShowFiles();
     }
+
+    private bool _suppressTypeFilter;
 
     partial void OnSearchTextChanged(string value) => RestartSearchTimer();
 

@@ -1,0 +1,98 @@
+<Window x:Class="PhotoExplorer.Wpf.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:PhotoExplorer.Core;assembly=PhotoExplorer.Core"
+        Title="Настройки" Width="620" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="Label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,4,12,4" />
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="16">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Style="{StaticResource Label}" Text="Тема:" />
+            <ComboBox Grid.Row="0" Grid.Column="1" Width="200" HorizontalAlignment="Left" Margin="0,4"
+                      SelectedValue="{Binding Theme}" SelectedValuePath="Tag">
+                <ComboBoxItem Content="Светлая" Tag="{x:Static core:AppTheme.Light}" />
+                <ComboBoxItem Content="Тёмная" Tag="{x:Static core:AppTheme.Dark}" />
+            </ComboBox>
+
+            <TextBlock Grid.Row="1" Style="{StaticResource Label}" Text="Размер миниатюр:" />
+            <ComboBox Grid.Row="1" Grid.Column="1" Width="200" HorizontalAlignment="Left" Margin="0,4"
+                      SelectedValue="{Binding ThumbnailSize}" SelectedValuePath="Tag">
+                <ComboBoxItem Content="Малые" Tag="{StaticResource SmallSize}" />
+                <ComboBoxItem Content="Средние" Tag="{StaticResource MediumSize}" />
+                <ComboBoxItem Content="Крупные" Tag="{StaticResource LargeSize}" />
+            </ComboBox>
+
+            <TextBlock Grid.Row="2" Style="{StaticResource Label}" Text="Стартовая папка:" VerticalAlignment="Top" Margin="0,10,12,4" />
+            <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,4">
+                <RadioButton Content="Последняя открытая" IsChecked="{Binding StartFromLastFolder}" />
+                <DockPanel Margin="0,4,0,0">
+                    <RadioButton DockPanel.Dock="Left" Content="Выбранная:" IsChecked="{Binding StartFromSelectedFolder}" />
+                    <Button DockPanel.Dock="Right" Content="Обзор..." Margin="6,0,0,0" Click="Browse_Click" />
+                    <TextBox Text="{Binding StartFolder}" IsEnabled="{Binding StartFromSelectedFolder}" VerticalContentAlignment="Center" />
+                </DockPanel>
+            </StackPanel>
+
+            <TextBlock Grid.Row="3" Style="{StaticResource Label}" Text="Расширения:" />
+            <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding Extensions}" />
+
+            <TextBlock Grid.Row="4" Style="{StaticResource Label}" Text="Слайд-шоу:" />
+            <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
+                <TextBlock Text="интервал, с" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox Width="70" Text="{Binding SlideShowInterval}" />
+                <CheckBox Content="Зацикливать" IsChecked="{Binding SlideShowLoop}" Margin="16,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="5" Style="{StaticResource Label}" Text="Папки:" />
+            <CheckBox Grid.Row="5" Grid.Column="1" Margin="0,4" Content="Показывать скрытые и системные папки"
+                      IsChecked="{Binding ShowHiddenFolders}" />
+
+            <TextBlock Grid.Row="6" Style="{StaticResource Label}" Text="Избранное:" VerticalAlignment="Top" Margin="0,8,12,4" />
+            <DockPanel Grid.Row="6" Grid.Column="1" Margin="0,4">
+                <Button DockPanel.Dock="Right" Content="Удалить" VerticalAlignment="Top" Margin="6,0,0,0"
+                        Command="{Binding RemoveFavoriteCommand}" />
+                <ListBox Height="90" ItemsSource="{Binding Favorites}" SelectedItem="{Binding SelectedFavorite}" />
+            </DockPanel>
+
+            <TextBlock Grid.Row="7" Style="{StaticResource Label}" Text="Размер кеша, МБ:" />
+            <TextBox Grid.Row="7" Grid.Column="1" Width="100" HorizontalAlignment="Left" Margin="0,4"
+                     Text="{Binding MaxCacheSizeMb}" />
+        </Grid>
+
+        <!-- Блок «Кеш» -->
+        <GroupBox Header="Кеш миниатюр" Margin="0,12,0,0" Padding="8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Top">
+                    <Button Content="Очистить устаревшее" Command="{Binding CleanupCacheCommand}" Margin="0,0,0,6" />
+                    <Button Content="Очистить всё" Command="{Binding ClearCacheCommand}" />
+                </StackPanel>
+                <TextBlock Text="{Binding CacheInfo}" TextWrapping="Wrap" />
+            </DockPanel>
+        </GroupBox>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="OK" Width="100" IsDefault="True" Click="Ok_Click" />
+            <Button Content="Отмена" Width="100" Margin="8,0,0,0" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

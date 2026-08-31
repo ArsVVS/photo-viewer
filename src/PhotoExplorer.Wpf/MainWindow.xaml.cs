@@ -19,6 +19,16 @@ public partial class MainWindow : Window
         Loaded += (_, _) => ViewModel.OpenStartFolder();
     }
 
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SettingsWindow { Owner = this };
+        if (dialog.ShowDialog() == true)
+        {
+            App.ApplyTheme();
+            ViewModel.ApplySettings();
+        }
+    }
+
     // Выбрали папку в дереве – открываем её
     private void FolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
